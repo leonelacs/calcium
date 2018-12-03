@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.regex.Pattern;
 
 public class Calc {
     public static List<MathOperator> mathOperators = new ArrayList<MathOperator>();
@@ -51,8 +52,15 @@ public class Calc {
     }
 
     public String ExpressionFormat(String exp) {
+        exp = exp.trim();
+        exp = "{" + exp + "}";
+        exp = BracketComplete(exp);
         exp = exp.replaceAll("×", "*");
         exp = exp.replaceAll("÷", "/");
+        exp = exp.replaceAll("\\{-", "{~");
+        exp = exp.replaceAll("\\(-", "(~");
+        exp = exp.replaceAll("\\{", "");
+        exp = exp.replaceAll("}", "");
         exp = exp.replaceAll("arcsin\\(", "S");
         exp = exp.replaceAll("arccos\\(", "C");
         exp = exp.replaceAll("arctan\\(", "T");
@@ -66,10 +74,60 @@ public class Calc {
         exp = exp.replaceAll("π", "3.14159");
         exp = exp.replaceAll("e", "2.71828");
         exp = exp.replaceAll("\\)\\(", ")*(");
-        exp = exp.replaceAll("\\{-", "~");
-        exp = exp.replaceAll("\\(-", "~");
         return exp;
     }
 
-    public
+    public String BracketComplete(String exp) {
+        char[] expArray = exp.toCharArray();
+        int left = 0, right = 0;
+        for (char c: expArray) {
+            if (c == '(') {
+                left++;
+            }
+            if (c == ')') {
+                right++;
+            }
+        }
+        if (right < left) {
+            int diff = left - right;
+            for (int i = 0; i < diff; i++) {
+                exp = exp + ")";
+            }
+        }
+        return exp;
+    }
+
+    public boolean BracketVaildate(String exp) {
+        if (exp.contains("()")) {
+            return false;
+        }
+        char[] expArray = exp.toCharArray();
+        Stack<Integer> veriStack = new Stack<Integer>();
+        for (char c: expArray) {
+            if (c == '(') {
+                veriStack.push(1);
+            }
+            else if (c == ')') {
+                if (veriStack.isEmpty()) {
+                    return false;
+                }
+                else {
+                    veriStack.pop();
+                }
+            }
+        }
+        return true;
+    }
+
+    public boolean FormatedExpressionVaildate(String expf) {
+        return true;
+    }
+
+    public BigDecimal FormatedExpressionCalculate(String expf) {
+        return null;
+    }
+
+    public String Compute(String expression) {
+        return null;
+    }
 }
