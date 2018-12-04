@@ -1,6 +1,7 @@
 package com.leonelacs.calcium;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -26,6 +27,7 @@ public class Calc {
         mathOperators.add(new MathOperator('g', 1, 8));
         mathOperators.add(new MathOperator('q', 1, 8));
         mathOperators.add(new MathOperator(')', 8, 1));
+        mathOperators.add(new MathOperator('#', 0, 0));
     }
 
     public static int OperatorPrioritiesCompare(char op1, char op2) {
@@ -69,11 +71,10 @@ public class Calc {
         exp = exp.replaceAll("tan\\(", "t");
         exp = exp.replaceAll("ln\\(", "n");
         exp = exp.replaceAll("log\\(", "g");
-        exp = exp.replaceAll("ln\\(", "n");
         exp = exp.replaceAll("√\\(", "q");
         exp = exp.replaceAll("π", "3.14159");
         exp = exp.replaceAll("e", "2.71828");
-        exp = exp.replaceAll("\\)\\(", ")*(");
+        //exp = exp.replaceAll("\\)\\(", ")*(");
         return exp;
     }
 
@@ -119,11 +120,100 @@ public class Calc {
         return true;
     }
 
+    public String MultiplyComplete(String exp) {
+        String patReplace = "([\\d\\)])([SCTstcngq\\(])";
+        exp = exp.replaceAll(patReplace, "$1" + "*" + "$2");
+        return exp;
+    }
+
+    public List<BigDecimal> NumbersSeparate(String expf) {
+        String patSplit = "[\\+\\-\\*/\\^\\(SCTsctngq\\)!]";
+        String[] numStrs = expf.split(patSplit);
+        List<BigDecimal> numbers = new ArrayList<BigDecimal>();
+        String patMatch = "(~)?\\d+(\\.\\d+)?";
+        for (String s: numStrs) {
+            if (s.matches(patMatch)) {
+                s = s.replace('~', '-');
+                BigDecimal decTemp = new BigDecimal(s);
+                numbers.add(decTemp);
+            }
+        }
+        return numbers;
+    }
+
     public boolean FormatedExpressionVaildate(String expf) {
         return true;
     }
 
     public BigDecimal FormatedExpressionCalculate(String expf) {
+        Stack<Character> operators = new Stack<Character>();
+        Stack<BigDecimal> numbers = new Stack<BigDecimal>();
+        List<BigDecimal> numSet = NumbersSeparate(expf);
+        String patReplace = "(~)?\\d+(\\.\\d+)?";
+        String expm = expf.replaceAll(patReplace, "@");
+        expm = expm + "#";
+        operators.push('#');
+        if (!numSet.isEmpty()) {
+            for (char c: expm.toCharArray()) {
+                if (c == '@') {
+                    numbers.push(numSet.get(0));
+                    numSet.remove(0);
+                }
+                else {
+                    boolean flag = true;
+                    while (flag) {
+                        if (c == '#') {
+                            return numbers.peek();
+                        }
+                        if (c == '!') {
+                            BigDecimal opnd = numbers.pop();
+                            BigInteger ndint;
+                            try {
+                                ndint = opnd.toBigIntegerExact();
+                            }
+                            catch (Exception e) {
+                                return  null;
+                            }
+                            long res = 1;
+                            for (long i = ndint.longValue(); i >= 2; i--) {
+                                res *= i;
+                            }
+                            numbers.push(new BigDecimal(res));
+                            continue;
+                        }
+                        int sign = OperatorPrioritiesCompare(operators.peek(), c);
+                        if (sign == 1) {
+                            operators.push(c);
+                            flag = false;
+                        }
+                        else if (sign == 0) {
+                            char curOp = operators.pop();
+                            flag = false;
+                            if (curOp == '(') {
+                                break;
+                            }
+                            else {
+                                BigDecimal opnd = numbers.pop();
+                                double nddou = opnd.doubleValue();
+                                Double res = 0.;
+                                if (curOp == 'S') res = Math.asin(nddou);
+                                else if (curOp == 'C') res = Math.acos(nddou);
+                                else if (curOp == 'T') res = Math.atan(nddou);
+                                else if (curOp == 's') res = Math.sin(nddou);
+                                else if (curOp == 'c') res = Math.cos(nddou);
+                                else if (curOp == 't') res = Math.tan(nddou);
+                                else if (curOp == 'n') res = Math.log(nddou);
+                                else if (curOp == 'g') res = Math.log10(nddou);
+                                else if (curOp == 'q') res = Math.sqrt(nddou);
+                                String restr = res.toString();
+                                BigDecimal resbd = new BigDecimal(restr);
+                                numbers.push(resbd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return null;
     }
 
