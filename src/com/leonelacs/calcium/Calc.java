@@ -30,6 +30,16 @@ public class Calc {
         mathOperators.add(new MathOperator('#', 0, 0));
     }
 
+    public class DecimalAnswer {
+        BigDecimal result;
+        String errInfo;
+
+        public DecimalAnswer(BigDecimal result, String errInfo) {
+            this.result = result;
+            this.errInfo = errInfo;
+        }
+    }
+
     public static int OperatorPrioritiesCompare(char op1, char op2) {
         int op1Prior = -1;
         int op2Prior = -1;
@@ -75,6 +85,7 @@ public class Calc {
         exp = exp.replaceAll("π", "3.14159");
         exp = exp.replaceAll("e", "2.71828");
         //exp = exp.replaceAll("\\)\\(", ")*(");
+        exp = MultiplyComplete(exp);
         return exp;
     }
 
@@ -145,7 +156,7 @@ public class Calc {
         return true;
     }
 
-    public BigDecimal FormatedExpressionCalculate(String expf) {
+    public DecimalAnswer FormatedExpressionCalculate(String expf) {
         Stack<Character> operators = new Stack<Character>();
         Stack<BigDecimal> numbers = new Stack<BigDecimal>();
         List<BigDecimal> numSet = NumbersSeparate(expf);
@@ -162,8 +173,9 @@ public class Calc {
                 else {
                     boolean flag = true;
                     while (flag) {
-                        if (c == '#') {
-                            return numbers.peek();
+                        if (c == '#' && operators.peek() == '#') {
+                            DecimalAnswer ans = new DecimalAnswer(numbers.peek(), "");
+                            return ans;
                         }
                         if (c == '!') {
                             BigDecimal opnd = numbers.pop();
@@ -172,7 +184,8 @@ public class Calc {
                                 ndint = opnd.toBigIntegerExact();
                             }
                             catch (Exception e) {
-                                return  null;
+                                DecimalAnswer ans = new DecimalAnswer(null, "DOME");
+                                return  ans;
                             }
                             long res = 1;
                             for (long i = ndint.longValue(); i >= 2; i--) {
@@ -190,7 +203,7 @@ public class Calc {
                             char curOp = operators.pop();
                             flag = false;
                             if (curOp == '(') {
-                                break;
+                                continue;
                             }
                             else {
                                 BigDecimal opnd = numbers.pop();
@@ -210,6 +223,38 @@ public class Calc {
                                 numbers.push(resbd);
                             }
                         }
+                        else if (sign == -1) {
+                            char op = operators.pop();
+                            BigDecimal b = numbers.pop();
+                            BigDecimal a = numbers.pop();
+                            BigDecimal res;
+                            if (op == '+') res = a.add(b);
+                            else if (op == '-') res = a.subtract(b);
+                            else if (op == '*') res = a.multiply(b);
+                            else if (op == '/') {
+                                try {
+                                    BigInteger bint = b.toBigIntegerExact();
+                                    if (bint.equals(new BigInteger("0"))) {
+                                        DecimalAnswer ans = new DecimalAnswer(null, "DIV0");
+                                        return ans;
+                                    }
+                                }
+                                catch (Exception e) {}
+                                res = a.divide(b);
+                            }
+                            else if (op == '^') {
+                                Double adou = a.doubleValue();
+                                Double bdou = b.doubleValue();
+                                Double resdou = Math.pow(adou, bdou);
+                                String resstr = resdou.toString();
+                                res = new BigDecimal(resstr);
+                            }
+                            else {
+                                res = new BigDecimal("0");
+                                DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+                            }
+                            numbers.push(res);
+                        }
                     }
                 }
             }
@@ -218,6 +263,8 @@ public class Calc {
     }
 
     public String Compute(String expression) {
-        return null;
+        String expf = ExpressionFormat(expression);
+        DecimalAnswer answer = FormatedExpressionCalculate(expf);
+        return answer.result.toString();
     }
 }
