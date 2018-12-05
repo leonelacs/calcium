@@ -2,6 +2,7 @@ package com.leonelacs.calcium;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -67,6 +68,10 @@ public class Calc {
         exp = exp.trim();
         exp = "{" + exp + "}";
         exp = BracketComplete(exp);
+        boolean bracketgood = BracketVaildate(exp);
+        if (!bracketgood) {
+            return "b";
+        }
         exp = exp.replaceAll("×", "*");
         exp = exp.replaceAll("÷", "/");
         exp = exp.replaceAll("\\{-", "{~");
@@ -159,8 +164,8 @@ public class Calc {
     }
 
     public DecimalAnswer FormatedExpressionCalculate(String expf) {
-        if (!BracketVaildate(expf)) {
-            DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+        if (expf.equals("b")) {
+            DecimalAnswer ans = new DecimalAnswer(null, "SYNEb");
             return ans;
         }
         try {
@@ -186,33 +191,36 @@ public class Calc {
                             if (c == '!') {
                                 BigDecimal opnd = numbers.pop();
                                 BigInteger ndint;
-                                long posinega;
-                                long ndlong;
+//                                long posinega;
+//                                long ndlong;
                                 try {
                                     ndint = opnd.toBigIntegerExact();
-                                    ndlong = ndint.longValue();
-                                    BigInteger big_0 = new BigInteger("0");
-                                    BigInteger big_49 = new BigInteger("49");
-                                    if (ndlong < 0) {
-                                        posinega = -1;
-                                    }
-                                    else {
-                                        posinega = 1;
-                                    }
-                                    if (ndlong > 49 || ndlong < -49) {
-                                        DecimalAnswer ans = new DecimalAnswer(null, "SOFE");
-                                        return ans;
-                                    }
+//                                    ndlong = ndint.longValue();
+//                                    BigInteger big_0 = new BigInteger("0");
+//                                    BigInteger big_49 = new BigInteger("49");
+//                                    if (ndlong < 0) {
+//                                        posinega = -1;
+//                                    }
+//                                    else {
+//                                        posinega = 1;
+//                                    }
+//                                    if (ndlong > 49 || ndlong < -49) {
+//                                        DecimalAnswer ans = new DecimalAnswer(null, "SOFE");
+//                                        return ans;
+//                                    }
                                 } catch (Exception e) {
                                     DecimalAnswer ans = new DecimalAnswer(null, "DOME");
                                     return ans;
                                 }
-                                long res = 1;
-                                for (long i = ndint.longValue() * posinega; i >= 2; i--) {
-                                    res *= i;
-                                }
-                                res *= posinega;
-                                numbers.push(new BigDecimal(res));
+//                                long res = 1;
+//                                for (long i = ndint.longValue() * posinega; i >= 2; i--) {
+//                                    res *= i;
+//                                }
+//                                res *= posinega;
+                                //////////
+                                BigInteger bigres = BigFactorial(ndint);
+                                //////////
+                                numbers.push(new BigDecimal(bigres));
                                 break;
                             }
                             int sign = OperatorPrioritiesCompare(operators.peek(), c);
@@ -256,8 +264,7 @@ public class Calc {
                                             DecimalAnswer ans = new DecimalAnswer(null, "DIV0");
                                             return ans;
                                         }
-                                    } catch (Exception e) {
-                                    }
+                                    } catch (Exception e) {}
                                     res = a.divide(b);
                                 } else if (op == '^') {
                                     Double adou = a.doubleValue();
@@ -267,7 +274,7 @@ public class Calc {
                                     res = new BigDecimal(resstr);
                                 } else {
                                     res = new BigDecimal("0");
-                                    DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+                                    DecimalAnswer ans = new DecimalAnswer(null, "SYNEp");
                                 }
                                 numbers.push(res);
                             }
@@ -279,7 +286,7 @@ public class Calc {
             return ans;
         }
         catch (Exception e) {
-            DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+            DecimalAnswer ans = new DecimalAnswer(null, "SYNEs");
             return ans;
         }
     }
@@ -293,12 +300,46 @@ public class Calc {
     public BigInteger BigFactorial(BigInteger bas) {
         BigInteger zero = new BigInteger("0");
         BigInteger one = new BigInteger("1");
-        BigInteger two = new BigInteger("2");
+        //BigInteger two = new BigInteger("2");
         BigInteger absRes = new BigInteger("1");
         BigInteger symb = new BigInteger("1");
         BigInteger i = bas;
-        if (bas.compareTo(zero) == -1) symb = new BigInteger("-1");
-        //for(i = )
-        return null;
+        if (bas.compareTo(zero) == -1) {
+            symb = new BigInteger("-1");
+        }
+        i = i.multiply(symb);
+        while (i.compareTo(one) == 1) {
+            absRes = absRes.multiply(i);
+            i = i.subtract(one);
+        }
+        absRes = absRes.multiply(symb);
+        return absRes;
+    }
+
+    public String StrCompute(String exp) {
+        DecimalAnswer deca = Compute(exp);
+        String stra;
+        if (deca.result != null) {
+            BigDecimal biggestView = new BigDecimal("999999999999");
+            BigDecimal smallestView = new BigDecimal("-99999999999");
+            BigDecimal toPosi0View = new BigDecimal("0.0000001");
+            BigDecimal toNega0View = new BigDecimal("-0.0000001");
+
+            if (deca.result.compareTo(biggestView) == 1 || deca.result.compareTo(smallestView) == -1 || (deca.result.compareTo(toPosi0View) == -1 && deca.result.compareTo(toNega0View) == 1)) {
+                stra = deca.result.stripTrailingZeros().toString();
+                String patScale = "(\\d+)(.?)(\\d{0,8})(\\d*)(E)([+-])(\\d+)";
+                stra = stra.replaceAll(patScale, "$1" + "." + "$3" + "E" + "$6" + "$7");
+                //stra = "1.123456789E"
+            }
+            else {
+                stra = deca.result.stripTrailingZeros().setScale(8, RoundingMode.DOWN).toPlainString();
+            }
+
+            //stra = deca.result.stripTrailingZeros().toString();
+        }
+        else {
+            stra = deca.errInfo;
+        }
+        return stra;
     }
 }

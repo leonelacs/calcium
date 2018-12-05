@@ -14,12 +14,13 @@ public class Main {
             str = str.trim();
             Calc calc = new Calc();
             String cres;
-            Calc.DecimalAnswer resda = calc.Compute(str);
-            if (resda.result != null) {
-                cres = resda.result.toString();
-            } else {
-                cres = resda.errInfo;
-            }
+            cres = calc.StrCompute(str);
+//            Calc.DecimalAnswer resda = calc.Compute(str);
+//            if (resda.result != null) {
+//                cres = resda.result.toString();
+//            } else {
+//                cres = resda.errInfo;
+//            }
             System.out.println(cres);
         }
     }
