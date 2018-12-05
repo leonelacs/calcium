@@ -153,118 +153,152 @@ public class Calc {
     }
 
     public boolean FormatedExpressionVaildate(String expf) {
+        List<String> patList = new ArrayList<String>();
+
         return true;
     }
 
     public DecimalAnswer FormatedExpressionCalculate(String expf) {
-        Stack<Character> operators = new Stack<Character>();
-        Stack<BigDecimal> numbers = new Stack<BigDecimal>();
-        List<BigDecimal> numSet = NumbersSeparate(expf);
-        String patReplace = "(~)?\\d+(\\.\\d+)?";
-        String expm = expf.replaceAll(patReplace, "@");
-        expm = expm + "#";
-        operators.push('#');
-        if (!numSet.isEmpty()) {
-            for (char c: expm.toCharArray()) {
-                if (c == '@') {
-                    numbers.push(numSet.get(0));
-                    numSet.remove(0);
-                }
-                else {
-                    boolean flag = true;
-                    while (flag) {
-                        if (c == '#' && operators.peek() == '#') {
-                            DecimalAnswer ans = new DecimalAnswer(numbers.peek(), "");
-                            return ans;
-                        }
-                        if (c == '!') {
-                            BigDecimal opnd = numbers.pop();
-                            BigInteger ndint;
-                            try {
-                                ndint = opnd.toBigIntegerExact();
+        if (!BracketVaildate(expf)) {
+            DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+            return ans;
+        }
+        try {
+            Stack<Character> operators = new Stack<Character>();
+            Stack<BigDecimal> numbers = new Stack<BigDecimal>();
+            List<BigDecimal> numSet = NumbersSeparate(expf);
+            String patReplace = "(~)?\\d+(\\.\\d+)?";
+            String expm = expf.replaceAll(patReplace, "@");
+            expm = expm + "#";
+            operators.push('#');
+            if (!numSet.isEmpty()) {
+                for (char c : expm.toCharArray()) {
+                    if (c == '@') {
+                        numbers.push(numSet.get(0));
+                        numSet.remove(0);
+                    } else {
+                        boolean flag = true;
+                        while (flag) {
+                            if (c == '#' && operators.peek() == '#') {
+                                DecimalAnswer ans = new DecimalAnswer(numbers.peek(), "");
+                                return ans;
                             }
-                            catch (Exception e) {
-                                DecimalAnswer ans = new DecimalAnswer(null, "DOME");
-                                return  ans;
-                            }
-                            long res = 1;
-                            for (long i = ndint.longValue(); i >= 2; i--) {
-                                res *= i;
-                            }
-                            numbers.push(new BigDecimal(res));
-                            continue;
-                        }
-                        int sign = OperatorPrioritiesCompare(operators.peek(), c);
-                        if (sign == 1) {
-                            operators.push(c);
-                            flag = false;
-                        }
-                        else if (sign == 0) {
-                            char curOp = operators.pop();
-                            flag = false;
-                            if (curOp == '(') {
-                                continue;
-                            }
-                            else {
+                            if (c == '!') {
                                 BigDecimal opnd = numbers.pop();
-                                double nddou = opnd.doubleValue();
-                                Double res = 0.;
-                                if (curOp == 'S') res = Math.asin(nddou);
-                                else if (curOp == 'C') res = Math.acos(nddou);
-                                else if (curOp == 'T') res = Math.atan(nddou);
-                                else if (curOp == 's') res = Math.sin(nddou);
-                                else if (curOp == 'c') res = Math.cos(nddou);
-                                else if (curOp == 't') res = Math.tan(nddou);
-                                else if (curOp == 'n') res = Math.log(nddou);
-                                else if (curOp == 'g') res = Math.log10(nddou);
-                                else if (curOp == 'q') res = Math.sqrt(nddou);
-                                String restr = res.toString();
-                                BigDecimal resbd = new BigDecimal(restr);
-                                numbers.push(resbd);
-                            }
-                        }
-                        else if (sign == -1) {
-                            char op = operators.pop();
-                            BigDecimal b = numbers.pop();
-                            BigDecimal a = numbers.pop();
-                            BigDecimal res;
-                            if (op == '+') res = a.add(b);
-                            else if (op == '-') res = a.subtract(b);
-                            else if (op == '*') res = a.multiply(b);
-                            else if (op == '/') {
+                                BigInteger ndint;
+                                long posinega;
+                                long ndlong;
                                 try {
-                                    BigInteger bint = b.toBigIntegerExact();
-                                    if (bint.equals(new BigInteger("0"))) {
-                                        DecimalAnswer ans = new DecimalAnswer(null, "DIV0");
+                                    ndint = opnd.toBigIntegerExact();
+                                    ndlong = ndint.longValue();
+                                    BigInteger big_0 = new BigInteger("0");
+                                    BigInteger big_49 = new BigInteger("49");
+                                    if (ndlong < 0) {
+                                        posinega = -1;
+                                    }
+                                    else {
+                                        posinega = 1;
+                                    }
+                                    if (ndlong > 49 || ndlong < -49) {
+                                        DecimalAnswer ans = new DecimalAnswer(null, "SOFE");
                                         return ans;
                                     }
+                                } catch (Exception e) {
+                                    DecimalAnswer ans = new DecimalAnswer(null, "DOME");
+                                    return ans;
                                 }
-                                catch (Exception e) {}
-                                res = a.divide(b);
+                                long res = 1;
+                                for (long i = ndint.longValue() * posinega; i >= 2; i--) {
+                                    res *= i;
+                                }
+                                res *= posinega;
+                                numbers.push(new BigDecimal(res));
+                                break;
                             }
-                            else if (op == '^') {
-                                Double adou = a.doubleValue();
-                                Double bdou = b.doubleValue();
-                                Double resdou = Math.pow(adou, bdou);
-                                String resstr = resdou.toString();
-                                res = new BigDecimal(resstr);
+                            int sign = OperatorPrioritiesCompare(operators.peek(), c);
+                            if (sign == 1) {
+                                operators.push(c);
+                                flag = false;
+                            } else if (sign == 0) {
+                                char curOp = operators.pop();
+                                flag = false;
+                                if (curOp == '(') {
+                                    continue;
+                                } else {
+                                    BigDecimal opnd = numbers.pop();
+                                    double nddou = opnd.doubleValue();
+                                    Double res = 0.;
+                                    if (curOp == 'S') res = Math.asin(nddou);
+                                    else if (curOp == 'C') res = Math.acos(nddou);
+                                    else if (curOp == 'T') res = Math.atan(nddou);
+                                    else if (curOp == 's') res = Math.sin(nddou);
+                                    else if (curOp == 'c') res = Math.cos(nddou);
+                                    else if (curOp == 't') res = Math.tan(nddou);
+                                    else if (curOp == 'n') res = Math.log(nddou);
+                                    else if (curOp == 'g') res = Math.log10(nddou);
+                                    else if (curOp == 'q') res = Math.sqrt(nddou);
+                                    String restr = res.toString();
+                                    BigDecimal resbd = new BigDecimal(restr);
+                                    numbers.push(resbd);
+                                }
+                            } else if (sign == -1) {
+                                char op = operators.pop();
+                                BigDecimal b = numbers.pop();
+                                BigDecimal a = numbers.pop();
+                                BigDecimal res;
+                                if (op == '+') res = a.add(b);
+                                else if (op == '-') res = a.subtract(b);
+                                else if (op == '*') res = a.multiply(b);
+                                else if (op == '/') {
+                                    try {
+                                        BigInteger bint = b.toBigIntegerExact();
+                                        if (bint.equals(new BigInteger("0"))) {
+                                            DecimalAnswer ans = new DecimalAnswer(null, "DIV0");
+                                            return ans;
+                                        }
+                                    } catch (Exception e) {
+                                    }
+                                    res = a.divide(b);
+                                } else if (op == '^') {
+                                    Double adou = a.doubleValue();
+                                    Double bdou = b.doubleValue();
+                                    Double resdou = Math.pow(adou, bdou);
+                                    String resstr = resdou.toString();
+                                    res = new BigDecimal(resstr);
+                                } else {
+                                    res = new BigDecimal("0");
+                                    DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+                                }
+                                numbers.push(res);
                             }
-                            else {
-                                res = new BigDecimal("0");
-                                DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
-                            }
-                            numbers.push(res);
                         }
                     }
                 }
             }
+            DecimalAnswer ans = new DecimalAnswer(null, "UNKE");
+            return ans;
         }
-        return null;
+        catch (Exception e) {
+            DecimalAnswer ans = new DecimalAnswer(null, "SYNE");
+            return ans;
+        }
     }
 
-    public String Compute(String expression) {
+    public DecimalAnswer Compute(String expression) {
         String expf = ExpressionFormat(expression);
         DecimalAnswer answer = FormatedExpressionCalculate(expf);
-        return answer.result.toString();
+        return answer;
+    }
+
+    public BigInteger BigFactorial(BigInteger bas) {
+        BigInteger zero = new BigInteger("0");
+        BigInteger one = new BigInteger("1");
+        BigInteger two = new BigInteger("2");
+        BigInteger absRes = new BigInteger("1");
+        BigInteger symb = new BigInteger("1");
+        BigInteger i = bas;
+        if (bas.compareTo(zero) == -1) symb = new BigInteger("-1");
+        //for(i = )
+        return null;
     }
 }
